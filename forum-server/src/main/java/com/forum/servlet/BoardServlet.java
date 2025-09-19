@@ -25,9 +25,6 @@ import jakarta.servlet.http.HttpServletResponse;
 public class BoardServlet extends HttpServlet {
 	@Override
 	protected void doGet(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException {
-		req.setCharacterEncoding("UTF-8");
-		resp.setCharacterEncoding("UTF-8");
-		resp.setContentType("application/json");
 		String path = req.getPathInfo();
 		if (path == null) {
 			path = "";
@@ -41,7 +38,7 @@ public class BoardServlet extends HttpServlet {
 					pw.write(__doGetBoardById(Integer.parseInt(path.substring(1))));
 				}
 				resp.setStatus(HttpServletResponse.SC_OK);
-			} else if (path.matches("^/[0-9]{0,10}/post/?$")) {
+			} else if (path.matches("^/[0-9]{0,10}/post$")) {
 				__doGetAllPosts(Integer.parseInt(path.substring(1, path.indexOf('/', 1))));
 				resp.setStatus(HttpServletResponse.SC_OK);
 			} else {
@@ -56,13 +53,13 @@ public class BoardServlet extends HttpServlet {
 
 	@Override
 	protected void doPost(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException {
-		req.setCharacterEncoding("UTF-8");
-		resp.setCharacterEncoding("UTF-8");
-		resp.setContentType("application/json");
 		String path = req.getPathInfo();
 		PrintWriter pw = resp.getWriter();
+		if (path == null) {
+			path = "";
+		}
 		try {
-			if (path.matches("^/[0-9]{0,10}/.*$")) {
+			if (path.matches("^/[0-9]{0,10}/[0-9a-zA-Z]+$")) {
 				int boardId = Integer.parseInt(path.substring(1, path.indexOf('/', 1)));
 				switch (path.substring(path.indexOf('/', 1))) {
 					case "/assignModerator" ->

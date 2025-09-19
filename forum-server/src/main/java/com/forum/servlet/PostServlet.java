@@ -21,11 +21,11 @@ import jakarta.servlet.http.HttpServletResponse;
 public class PostServlet extends HttpServlet {
 	@Override
 	protected void doGet(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException {
-		req.setCharacterEncoding("UTF-8");
-		resp.setCharacterEncoding("UTF-8");
-		resp.setContentType("application/json");
 		String path = req.getPathInfo();
 		PrintWriter pw = resp.getWriter();
+		if (path == null) {
+			path = "";
+		}
 		try {
 			if (path.matches("^/[0-9]{0,10}$")) {
 				pw.write(__doGetPostById(Integer.parseInt(path.substring(1))));
@@ -42,9 +42,6 @@ public class PostServlet extends HttpServlet {
 
 	@Override
 	protected void doPost(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException {
-		req.setCharacterEncoding("UTF-8");
-		resp.setCharacterEncoding("UTF-8");
-		resp.setContentType("application/json");
 		String path = req.getPathInfo();
 		PrintWriter pw = resp.getWriter();
 		try {

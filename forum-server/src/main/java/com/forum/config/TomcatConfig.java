@@ -3,7 +3,10 @@ package com.forum.config;
 import org.apache.catalina.Context;
 import org.apache.catalina.LifecycleException;
 import org.apache.catalina.startup.Tomcat;
+import org.apache.tomcat.util.descriptor.web.FilterDef;
+import org.apache.tomcat.util.descriptor.web.FilterMap;
 
+import com.forum.servlet.AuthFilter;
 import com.forum.servlet.AuthServlet;
 import com.forum.servlet.BoardServlet;
 import com.forum.servlet.PostServlet;
@@ -23,6 +26,7 @@ public class TomcatConfig {
 		tomcat.setBaseDir("target/tomcat/");
 		tomcat.getConnector();
 		Context ctx = tomcat.addContext("/api", null);
+		__registerFilter(ctx);
 		__registerServlet(tomcat);
 		__registerServletMapping(ctx);
 		tomcat.init();
@@ -41,5 +45,16 @@ public class TomcatConfig {
 		ctx.addServletMappingDecoded("/auth/*", "user_servlet");
 		ctx.addServletMappingDecoded("/board/*", "board_servlet");
 		ctx.addServletMappingDecoded("/post/*", "post_servlet");
+	}
+
+	private static void __registerFilter(Context ctx) {
+		FilterDef fd = new FilterDef();
+		FilterMap fm = new FilterMap();
+		fd.setFilterName("auth_filter");
+		fd.setFilter(new AuthFilter());
+		fm.setFilterName("auth_filter");
+		fm.addURLPattern("/*");
+		ctx.addFilterDef(fd);
+		ctx.addFilterMap(fm);
 	}
 }
