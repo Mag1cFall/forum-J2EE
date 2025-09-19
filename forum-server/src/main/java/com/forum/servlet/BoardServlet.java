@@ -8,9 +8,12 @@ import java.util.Optional;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.forum.config.ServiceConfig;
 import com.forum.dto.BoardDto;
+import com.forum.dto.CreateBoardDto;
+import com.forum.dto.PostDto;
 import com.forum.dto.SingleMessageDto;
 import com.forum.dto.UserDto;
 import com.forum.model.Board;
+import com.forum.util.ServletUtil;
 
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServlet;
@@ -25,15 +28,21 @@ public class BoardServlet extends HttpServlet {
 		req.setCharacterEncoding("UTF-8");
 		resp.setCharacterEncoding("UTF-8");
 		resp.setContentType("application/json");
-		String ctxPath = req.getContextPath();
+		String path = req.getPathInfo();
+		if (path == null) {
+			path = "";
+		}
 		PrintWriter pw = resp.getWriter();
 		try {
-			if (ctxPath.matches("^/[0-9]{0,18}$")) {
-				if (ctxPath.equals("/")) {
+			if (path.matches("^/[0-9]{0,10}$")) {
+				if (path.equals("/")) {
 					pw.write(__doGetAllBoards());
 				} else {
-					pw.write(__doGetBoardById(Integer.parseInt(ctxPath.substring(1))));
+					pw.write(__doGetBoardById(Integer.parseInt(path.substring(1))));
 				}
+				resp.setStatus(HttpServletResponse.SC_OK);
+			} else if (path.matches("^/[0-9]{0,10}/post/?$")) {
+				__doGetAllPosts(Integer.parseInt(path.substring(1, path.indexOf('/', 1))));
 				resp.setStatus(HttpServletResponse.SC_OK);
 			} else {
 				throw new IllegalArgumentException("没有这样的服务！");
@@ -50,16 +59,21 @@ public class BoardServlet extends HttpServlet {
 		req.setCharacterEncoding("UTF-8");
 		resp.setCharacterEncoding("UTF-8");
 		resp.setContentType("application/json");
-		String ctxPath = req.getContextPath();
+		String path = req.getPathInfo();
 		PrintWriter pw = resp.getWriter();
 		try {
-			switch (ctxPath) {
-				case "/assignModerator" ->
-					__doPostAssignModerator(req);
-				case "/create" ->
-					__doPostCreateBoard(req);
-				default ->
-					throw new IllegalArgumentException("没有这样的服务！");
+			if (path.matches("^/[0-9]{0,10}/.*$")) {
+				int boardId = Integer.parseInt(path.substring(1, path.indexOf('/', 1)));
+				switch (path.substring(path.indexOf('/', 1))) {
+					case "/assignModerator" ->
+						__doPostAssignModerator(req, boardId);
+					default ->
+						throw new IllegalArgumentException("没有这样的服务！");
+				}
+			} else if (path.equals("/create")) {
+				__doPostCreateBoard(req);
+			} else {
+				throw new IllegalArgumentException("没有这样的服务！");
 			}
 			resp.setStatus(HttpServletResponse.SC_OK);
 		} catch (Exception e) {
@@ -69,6 +83,19 @@ public class BoardServlet extends HttpServlet {
 		pw.flush();
 	}
 
+	/**
+	 * /api/board/[bid]/post
+	 */
+	private String __doGetAllPosts(int boardId) throws IOException {
+		List<PostDto> list = ServiceConfig.postService.getPostsByBoard(boardId).stream()
+				.map(x -> new PostDto(x))
+				.toList();
+		return ServiceConfig.mapperService.writeValueAsString(list);
+	}
+
+	/**
+	 * /api/board/
+	 */
 	private String __doGetAllBoards() throws JsonProcessingException {
 		List<Board> boards = ServiceConfig.boardService.getAllBoards();
 		List<BoardDto> boardDtos = boards.stream().map(x -> new BoardDto(x.getId(), x.getName(), x.getDescription(),
@@ -76,6 +103,9 @@ public class BoardServlet extends HttpServlet {
 		return ServiceConfig.mapperService.writeValueAsString(boardDtos);
 	}
 
+	/**
+	 * /api/board/[bid]
+	 */
 	private String __doGetBoardById(int id) throws JsonProcessingException {
 		Optional<Board> board = ServiceConfig.boardService.findById(id);
 		if (board.isPresent()) {
@@ -85,18 +115,21 @@ public class BoardServlet extends HttpServlet {
 		}
 	}
 
-	private void __doPostAssignModerator(HttpServletRequest req) throws JsonProcessingException {
-		BoardDto board = ServiceConfig.mapperService.readValue(req.getParameter("board"), BoardDto.class);
-		UserDto user = ServiceConfig.mapperService.readValue(req.getParameter("user"), UserDto.class);
-		ServiceConfig.boardService.assignModerator(board.getId(), user.getUid());
+	/**
+	 * /api/[bid]/assignModerator
+	 */
+	private void __doPostAssignModerator(HttpServletRequest req, int boardId) throws IOException {
+		UserDto user = ServiceConfig.mapperService.readValue(ServletUtil.getJsonString(req), UserDto.class);
+		ServiceConfig.boardService.assignModerator(boardId, user.getUid());
 	}
 
-	private void __doPostCreateBoard(HttpServletRequest req) throws JsonProcessingException {
-		SingleMessageDto name = ServiceConfig.mapperService.readValue(req.getParameter("boardName"),
-				SingleMessageDto.class),
-				desc = ServiceConfig.mapperService.readValue(req.getParameter("description"), SingleMessageDto.class),
-				modId = ServiceConfig.mapperService.readValue(req.getParameter("userId"), SingleMessageDto.class);
-		ServiceConfig.boardService.createBoard(name.getMessage(), desc.getMessage(),
-				Integer.parseInt(modId.getMessage()));
+	/**
+	 * /api/board/create
+	 */
+	private void __doPostCreateBoard(HttpServletRequest req) throws IOException {
+		CreateBoardDto cbDto = ServiceConfig.mapperService.readValue(ServletUtil.getJsonString(req),
+				CreateBoardDto.class);
+		ServiceConfig.boardService.createBoard(cbDto.getName(), cbDto.getDesc(),
+				cbDto.getModId());
 	}
 }

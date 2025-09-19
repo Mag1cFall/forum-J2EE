@@ -3,7 +3,6 @@ package com.forum.dto;
 /**
  */
 public class SingleMessageDto {
-
 	private String message;
 
 	public SingleMessageDto(String message) {

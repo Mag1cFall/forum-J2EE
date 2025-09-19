@@ -19,23 +19,27 @@ public class TomcatConfig {
 			throws LifecycleException {
 		Tomcat tomcat = new Tomcat();
 		tomcat.setHostname("localhost");
-		tomcat.setPort(8000);
+		tomcat.setPort(8080);
+		tomcat.setBaseDir("target/tomcat/");
 		tomcat.getConnector();
-		Context ctx = tomcat.addContext("", "src/main");
+		Context ctx = tomcat.addContext("/api", null);
 		__registerServlet(tomcat);
 		__registerServletMapping(ctx);
+		tomcat.init();
+		tomcat.start();
+		tomcat.getServer().await();
 	}
 
 	private static void __registerServlet(Tomcat tomcat)
 			throws LifecycleException {
-		tomcat.addServlet("", "user_servlet", new AuthServlet());
-		tomcat.addServlet("", "board_servlet", new BoardServlet());
-		tomcat.addServlet("", "post_servlet", new PostServlet());
+		tomcat.addServlet("/api", "user_servlet", new AuthServlet());
+		tomcat.addServlet("/api", "board_servlet", new BoardServlet());
+		tomcat.addServlet("/api", "post_servlet", new PostServlet());
 	}
 
 	private static void __registerServletMapping(Context ctx) {
-		ctx.addServletMappingDecoded("/api/auth/*", "user_servlet");
-		ctx.addServletMappingDecoded("/api/board/*", "board_servlet");
-		ctx.addServletMappingDecoded("/api/post/*", "post_servlet");
+		ctx.addServletMappingDecoded("/auth/*", "user_servlet");
+		ctx.addServletMappingDecoded("/board/*", "board_servlet");
+		ctx.addServletMappingDecoded("/post/*", "post_servlet");
 	}
 }

@@ -3,6 +3,8 @@ package com.forum.dto;
 import java.time.LocalDateTime;
 import java.util.List;
 
+import com.forum.model.Post;
+
 public class PostDto {
 	private int pid;
 	private String title, content;
@@ -25,6 +27,13 @@ public class PostDto {
 		this.likes = likes;
 		this.dislikes = dislikes;
 		this.comments = comments;
+	}
+
+	public PostDto(Post post) {
+		this(post.getId(), post.getTitle(), post.getContent(), new UserDto(post.getAuthor()),
+				new BoardDto(post.getBoard()), post.getCreatedAt(), post.isPinned(), post.getLikes(),
+				post.getDislikes(),
+				post.getComments().stream().map(y -> new CommentDto(y)).toList());
 	}
 
 	public void setBoard(BoardDto board) {

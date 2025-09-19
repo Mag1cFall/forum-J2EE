@@ -4,12 +4,12 @@ import java.io.IOException;
 import java.io.PrintWriter;
 import java.util.Optional;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
 import com.forum.config.ServiceConfig;
 import com.forum.dto.AuthDto;
 import com.forum.dto.SingleMessageDto;
 import com.forum.dto.UserDto;
 import com.forum.model.User;
+import com.forum.util.ServletUtil;
 
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServlet;
@@ -27,10 +27,10 @@ public class AuthServlet extends HttpServlet {
 		req.setCharacterEncoding("UTF-8");
 		resp.setCharacterEncoding("UTF-8");
 		resp.setContentType("application/json");
-		String ctxPath = req.getContextPath();
+		String path = req.getPathInfo();
 		PrintWriter pw = resp.getWriter();
 		try {
-			switch (ctxPath) {
+			switch (path) {
 				case "/login" ->
 					__doPostLogin(req);
 				case "/register" ->
@@ -48,9 +48,12 @@ public class AuthServlet extends HttpServlet {
 		pw.flush();
 	}
 
+	/**
+	 * /api/auth/login
+	 */
 	private void __doPostLogin(HttpServletRequest req)
-			throws JsonProcessingException {
-		AuthDto authDto = ServiceConfig.mapperService.readValue(req.getParameter("auth"), AuthDto.class);
+			throws IOException {
+		AuthDto authDto = ServiceConfig.mapperService.readValue(ServletUtil.getJsonString(req), AuthDto.class);
 		Optional<User> userOpt = ServiceConfig.userService.login(authDto.getUsername(), authDto.getPassword());
 		if (userOpt.isPresent()) {
 			HttpSession session = req.getSession();
@@ -60,14 +63,21 @@ public class AuthServlet extends HttpServlet {
 		}
 	}
 
+	/**
+	 * /api/auth/register
+	 */
 	private void __doPostRegister(HttpServletRequest req)
-			throws JsonProcessingException {
-		AuthDto authDto = ServiceConfig.mapperService.readValue(req.getParameter("auth"), AuthDto.class);
+			throws IOException {
+		AuthDto authDto = ServiceConfig.mapperService.readValue(ServletUtil.getJsonString(req), AuthDto.class);
+
 		User user = ServiceConfig.userService.register(authDto.getUsername(), authDto.getPassword());
 		HttpSession session = req.getSession();
 		session.setAttribute("user", new UserDto(user));
 	}
 
+	/**
+	 * /api/auth/logout
+	 */
 	private void __doPostLogout(HttpServletRequest req) {
 		HttpSession session = req.getSession();
 		session.removeAttribute("user");
